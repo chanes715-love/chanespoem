@@ -2297,6 +2297,67 @@
       letter-spacing: 0.5px;
     }
 
+  
+    /* =========================================================================
+       WALKING CHIBI ANCIENT POETS - FLOATING NAME TAG & QUOTE BUBBLE
+       ========================================================================= */
+    .npc-label-wrap {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 12;
+      transition: opacity 0.25s ease;
+    }
+
+    .npc-name-pill {
+      background: rgba(253, 251, 247, 0.92);
+      border: 1.5px solid #7aa99c;
+      color: #2c3e50;
+      font-family: var(--font-iansui);
+      font-size: 12.5px;
+      font-weight: bold;
+      padding: 2px 9px;
+      border-radius: 14px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+      white-space: nowrap;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .npc-label-wrap:hover .npc-name-pill {
+      background: #7aa99c;
+      color: #fff;
+      transform: scale(1.08);
+    }
+
+    .npc-quote-bubble {
+      background: rgba(255, 253, 248, 0.97);
+      border: 2px solid #b28850;
+      color: #1b3a4b;
+      font-family: var(--font-iansui);
+      font-size: 14px;
+      font-weight: bold;
+      padding: 7px 13px;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      white-space: nowrap;
+      margin-bottom: 6px;
+      display: none;
+      animation: npcBubblePop 0.25s ease-out;
+    }
+
+    .npc-quote-bubble.show {
+      display: block;
+    }
+
+    @keyframes npcBubblePop {
+      0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
   </style>
 </head>
 <body>
@@ -3243,264 +3304,371 @@
 
     
     // =========================================================================
-    // ANCIENT FIGURES WALKING IN THE TANG GARDEN (古人漫步庭園)
+    // ANCIENT FIGURES WALKING IN THE TANG GARDEN (參考附圖 Q 版古風人物漫步庭園)
     // =========================================================================
     const ancientNPCs = [];
+    const npcLabelsContainer = document.getElementById('world-labels');
+
+    function buildChibiAncientSVG(cfg) {
+      const robe = cfg.robeHex || '#f6f4ee';
+      const shade = cfg.shadeHex || '#dfe5dc';
+      const trim = cfg.trimHex || '#7aa99c';
+      const hair = cfg.hairHex || '#4a2511';
+      const skin = '#ffe0cc';
+      const neckSkin = '#f7bfa6';
+      const blush = '#f9998a';
+      const leaf = cfg.leafHex || '#5fa06c';
+      const hasBeard = cfg.hasBeard !== false;
+      const hat = cfg.hat || 'bun';
+
+      // Headgear / Topknot SVG
+      let headgearSvg = '';
+      if (hat === 'bun') {
+        // Signature topknot bun + celadon ribbon with two fluttering tails (matching user reference image)
+        headgearSvg = `
+          <!-- Fluttering hair ribbons -->
+          <path d="M 338 112 C 385 112, 412 136, 468 158 C 446 168, 434 176, 426 184 C 392 158, 368 140, 330 132 Z" fill="${trim}"/>
+          <path d="M 332 126 C 368 148, 386 174, 424 192 C 406 196, 392 200, 382 204 C 358 182, 344 162, 318 142 Z" fill="${trim}" opacity="0.92"/>
+          <!-- Topknot bun -->
+          <ellipse cx="322" cy="78" rx="44" ry="34" transform="rotate(24 322 78)" fill="${hair}"/>
+          <!-- Hair ribbon band wrapping the bun -->
+          <path d="M 278 92 Q 312 106 352 124 L 344 138 Q 304 118 270 104 Z" fill="${trim}"/>
+          <ellipse cx="348" cy="132" rx="14" ry="9" transform="rotate(24 348 132)" fill="${trim}"/>
+        `;
+      } else if (hat === 'double-bun') {
+        // Cute twin buns for little child scholars
+        headgearSvg = `
+          <circle cx="176" cy="112" r="32" fill="${hair}"/>
+          <circle cx="332" cy="108" r="32" fill="${hair}"/>
+          <path d="M 158 134 Q 176 144 194 134" stroke="${trim}" stroke-width="11" stroke-linecap="round" fill="none"/>
+          <path d="M 314 130 Q 332 140 350 130" stroke="${trim}" stroke-width="11" stroke-linecap="round" fill="none"/>
+          <path d="M 346 130 Q 378 148 394 170" stroke="${trim}" stroke-width="9" stroke-linecap="round" fill="none"/>
+        `;
+      } else if (hat === 'dongpo') {
+        // Su Dongpo tall scholar cap
+        headgearSvg = `
+          <path d="M 230 98 L 248 28 Q 285 16 324 32 L 340 108 Z" fill="#2c3e50"/>
+          <path d="M 224 94 Q 285 112 344 106 L 340 120 Q 284 128 220 108 Z" fill="${trim}"/>
+          <path d="M 338 112 C 378 122, 405 142, 434 158" stroke="${trim}" stroke-width="11" stroke-linecap="round" fill="none"/>
+        `;
+      } else if (hat === 'straw') {
+        // Tao Yuanming conical straw hat
+        headgearSvg = `
+          <path d="M 105 145 Q 245 36 400 138 Q 252 162 105 145 Z" fill="#dfc07b" stroke="#b9934c" stroke-width="5"/>
+          <path d="M 208 82 Q 252 54 298 80" fill="none" stroke="#b9934c" stroke-width="5" stroke-linecap="round"/>
+          <path d="M 345 142 C 382 154, 412 168, 444 186" stroke="${trim}" stroke-width="10" stroke-linecap="round" fill="none"/>
+        `;
+      } else if (hat === 'crown') {
+        // Heroic Tang scholar/general crown with ribbons
+        headgearSvg = `
+          <path d="M 340 112 C 392 110, 428 134, 474 156 C 452 166, 442 174, 432 182 C 398 156, 372 138, 334 130 Z" fill="${trim}"/>
+          <path d="M 282 96 L 292 50 L 314 64 L 336 46 L 348 106 Z" fill="#d4a017" stroke="#9e740b" stroke-width="3"/>
+          <path d="M 276 96 Q 312 108 352 122 L 344 134 Q 306 118 270 106 Z" fill="${trim}"/>
+        `;
+      }
+
+      // Beard SVG (mustache + cute pointed goatee matching reference image)
+      const beardSvg = hasBeard ? `
+        <!-- Mustache -->
+        <path d="M 142 256 C 154 234, 178 232, 198 248 C 206 254, 210 262, 206 266 C 194 256, 178 250, 166 252 C 154 254, 146 260, 142 256 Z" fill="${hair}"/>
+        <!-- Cute pointed goatee -->
+        <path d="M 152 278 C 166 274, 184 276, 198 282 C 202 308, 188 332, 168 352 C 152 332, 146 306, 152 278 Z" fill="${hair}"/>
+      ` : '';
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+        <!-- Drifting green leaves around character -->
+        <path d="M 24 272 Q 56 238 96 244 Q 82 280 24 272 Z" fill="${leaf}"/>
+        <path d="M 46 396 Q 78 398 94 432 Q 56 436 46 396 Z" fill="${leaf}"/>
+        <path d="M 382 358 Q 402 318 442 322 Q 428 362 382 358 Z" fill="${leaf}"/>
+
+        <!-- Headgear / Topknot & fluttering ribbons -->
+        ${headgearSvg}
+
+        <!-- Back / Flowing Robe Silhouette -->
+        <!-- Neck -->
+        <path d="M 192 284 L 246 296 L 236 332 L 182 316 Z" fill="${neckSkin}"/>
+
+        <!-- Back left sleeve shadow -->
+        <path d="M 164 316 C 122 332, 114 388, 138 416 L 176 380 Z" fill="${shade}"/>
+
+        <!-- Main flowing A-line Hanfu robe -->
+        <path d="M 184 306 C 228 296, 272 302, 314 338 C 350 370, 384 382, 416 388 C 402 414, 378 424, 352 428 C 362 454, 372 472, 382 486 C 320 506, 246 512, 114 474 C 126 426, 140 370, 184 306 Z" fill="${robe}"/>
+
+        <!-- Right sleeve outer cuff trim -->
+        <path d="M 378 380 C 398 384, 412 386, 424 386 C 412 412, 388 424, 362 428 L 354 416 C 378 412, 396 402, 404 388 Z" fill="${trim}" opacity="0.65"/>
+
+        <!-- Bottom hem trim -->
+        <path d="M 114 468 C 204 494, 294 498, 376 476 L 382 488 C 296 514, 200 510, 108 482 Z" fill="${trim}"/>
+
+        <!-- Crossed collar (交領右衽) -->
+        <path d="M 244 300 C 216 322, 186 356, 152 400 C 142 416, 136 436, 142 452 C 152 470, 174 484, 200 494 L 184 496 C 154 482, 132 464, 124 444 C 118 424, 126 400, 140 380 C 174 336, 204 308, 236 292 Z" fill="${trim}"/>
+        <path d="M 180 310 C 188 326, 198 342, 206 352 L 194 364 C 184 348, 172 332, 166 318 Z" fill="${trim}"/>
+
+        <!-- Waist sash & long fluttering belt tails -->
+        <path d="M 136 394 Q 204 404 268 408 L 266 426 Q 198 424 130 412 Z" fill="${trim}"/>
+        <!-- Front short sash tail -->
+        <path d="M 206 418 C 220 442, 240 462, 266 474 L 254 486 C 228 470, 208 450, 194 426 Z" fill="${trim}"/>
+        <!-- Long sweeping back sash tail -->
+        <path d="M 246 414 C 310 434, 384 442, 466 416 C 446 444, 424 466, 398 474 C 344 470, 290 456, 238 430 Z" fill="${trim}"/>
+        <!-- Sash bow knot -->
+        <ellipse cx="204" cy="414" rx="18" ry="13" fill="${trim}"/>
+        <path d="M 214 406 C 234 394, 254 400, 258 416 C 242 422, 224 422, 214 416 Z" fill="${trim}"/>
+
+        <!-- Chibi Head Base (Hair back) -->
+        <circle cx="252" cy="184" r="118" fill="${hair}"/>
+
+        <!-- Face Shape (Warm peach with cute heart hairline) -->
+        <path d="M 164 128 C 186 112, 210 128, 222 138 C 240 124, 268 124, 286 146 C 302 166, 304 202, 294 234 C 280 274, 234 294, 186 286 C 142 278, 118 242, 124 198 C 128 168, 144 142, 164 128 Z" fill="${skin}"/>
+
+        <!-- Cute Side Ear -->
+        <ellipse cx="302" cy="236" rx="22" ry="19" transform="rotate(-18 302 236)" fill="${skin}"/>
+        <path d="M 294 236 Q 304 228 310 238" stroke="#e8a78c" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+
+        <!-- Eyebrows -->
+        <path d="M 148 176 Q 160 168 170 176" stroke="${hair}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+        <path d="M 218 184 Q 232 178 244 188" stroke="${hair}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+
+        <!-- Big Expressive Oval Eyes -->
+        <ellipse cx="158" cy="208" rx="12" ry="16" transform="rotate(-6 158 208)" fill="${hair}"/>
+        <ellipse cx="222" cy="220" rx="12.5" ry="16.5" transform="rotate(-6 222 220)" fill="${hair}"/>
+        <!-- Subtle eye highlights for extra cuteness -->
+        <circle cx="154" cy="202" r="3.5" fill="#ffffff" opacity="0.85"/>
+        <circle cx="218" cy="214" r="3.5" fill="#ffffff" opacity="0.85"/>
+
+        <!-- Big Rosy Pink Cheeks -->
+        <ellipse cx="132" cy="234" rx="16" ry="14" fill="${blush}" opacity="0.85"/>
+        <ellipse cx="238" cy="252" rx="22" ry="17" fill="${blush}" opacity="0.85"/>
+
+        <!-- Happy Open Smile -->
+        <path d="M 162 252 Q 178 272 196 258" fill="#f28b82" stroke="#c05a54" stroke-width="3.5" stroke-linecap="round"/>
+
+        <!-- Mustache & Goatee Beard -->
+        ${beardSvg}
+      </svg>`;
+    }
+
+    function createChibiPoetTexture(cfg) {
+      const svgStr = buildChibiAncientSVG(cfg);
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace || undefined;
+
+      const img = new Image();
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      img.onload = () => {
+        ctx.clearRect(0, 0, 512, 512);
+        ctx.drawImage(img, 0, 0, 512, 512);
+        texture.needsUpdate = true;
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+      return texture;
+    }
 
     function createAncientFigure(config) {
       const group = new THREE.Group();
-      const scale = config.scale || 1.1;
+      const size = config.size || 7.4;
 
-      // 1. Tapered Robe Body
-      const bodyMat = new THREE.MeshLambertMaterial({ color: config.robeColor });
-      const bodyGeo = new THREE.CylinderGeometry(0.42 * scale, 0.78 * scale, 1.9 * scale, 12);
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.y = 1.15 * scale;
-      body.castShadow = true;
-      group.add(body);
+      // Soft ground contact shadow beneath the walking figure
+      const shadowGeo = new THREE.CircleGeometry(size * 0.24, 24);
+      const shadowMat = new THREE.MeshBasicMaterial({
+        color: 0x1e272e,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false
+      });
+      const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.08;
+      group.add(shadow);
 
-      // Belt / Sash
-      const beltMat = new THREE.MeshLambertMaterial({ color: config.beltColor || 0xb28850 });
-      const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.55 * scale, 0.55 * scale, 0.22 * scale, 12), beltMat);
-      belt.position.y = 1.25 * scale;
-      group.add(belt);
-
-      // Collar trim
-      const collarMat = new THREE.MeshLambertMaterial({ color: 0xfcf9f2 });
-      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.44 * scale, 0.5 * scale, 0.3 * scale, 12), collarMat);
-      collar.position.y = 2.05 * scale;
-      group.add(collar);
-
-      // 2. Chibi Head
-      const headMat = new THREE.MeshLambertMaterial({ color: 0xffe7d1 });
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.72 * scale, 16, 16), headMat);
-      head.position.y = 2.65 * scale;
-      head.castShadow = true;
-      group.add(head);
-
-      // Eyes
-      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1e272e });
-      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.08 * scale, 8, 8), eyeMat);
-      eyeL.position.set(-0.22 * scale, 2.7 * scale, 0.65 * scale);
-      group.add(eyeL);
-      const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.08 * scale, 8, 8), eyeMat);
-      eyeR.position.set(0.22 * scale, 2.7 * scale, 0.65 * scale);
-      group.add(eyeR);
-
-      // Cute Blush Cheeks
-      const blushMat = new THREE.MeshBasicMaterial({ color: 0xff9999 });
-      const blushL = new THREE.Mesh(new THREE.SphereGeometry(0.1 * scale, 8, 8), blushMat);
-      blushL.position.set(-0.38 * scale, 2.55 * scale, 0.58 * scale);
-      group.add(blushL);
-      const blushR = new THREE.Mesh(new THREE.SphereGeometry(0.1 * scale, 8, 8), blushMat);
-      blushR.position.set(0.38 * scale, 2.55 * scale, 0.58 * scale);
-      group.add(blushR);
-
-      // 3. Hair & Hats
-      const hairMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-      if (config.hat === 'bun') {
-        // Single Topknot Bun with ribbon
-        const bun = new THREE.Mesh(new THREE.SphereGeometry(0.28 * scale, 10, 10), hairMat);
-        bun.position.set(0, 3.42 * scale, 0);
-        group.add(bun);
-        const rib = new THREE.Mesh(new THREE.BoxGeometry(0.5 * scale, 0.12 * scale, 0.25 * scale), new THREE.MeshLambertMaterial({ color: 0xe74c3c }));
-        rib.position.set(0, 3.35 * scale, -0.22 * scale);
-        group.add(rib);
-      } else if (config.hat === 'double-bun') {
-        // Double Buns (Little Scholar Boy / Girl)
-        const bun1 = new THREE.Mesh(new THREE.SphereGeometry(0.26 * scale, 10, 10), hairMat);
-        bun1.position.set(-0.5 * scale, 3.25 * scale, 0);
-        group.add(bun1);
-        const bun2 = new THREE.Mesh(new THREE.SphereGeometry(0.26 * scale, 10, 10), hairMat);
-        bun2.position.set(0.5 * scale, 3.25 * scale, 0);
-        group.add(bun2);
-      } else if (config.hat === 'dongpo') {
-        // Tall Dongpo Cap
-        const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.48 * scale, 0.56 * scale, 0.8 * scale, 12), new THREE.MeshLambertMaterial({ color: 0x34495e }));
-        hat.position.set(0, 3.5 * scale, 0);
-        group.add(hat);
-      } else if (config.hat === 'straw') {
-        // Farmer Straw Conical Hat
-        const hat = new THREE.Mesh(new THREE.ConeGeometry(1.25 * scale, 0.55 * scale, 16), new THREE.MeshLambertMaterial({ color: 0xd4ac0d }));
-        hat.position.set(0, 3.35 * scale, 0);
-        group.add(hat);
-      } else if (config.hat === 'scholar') {
-        // Square Scholar Cap
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.8 * scale, 0.45 * scale, 0.8 * scale), new THREE.MeshLambertMaterial({ color: 0x2c3e50 }));
-        cap.position.set(0, 3.42 * scale, 0);
-        group.add(cap);
-      } else if (config.hat === 'helmet') {
-        // Heroic Helmet with Plumage
-        const helm = new THREE.Mesh(new THREE.SphereGeometry(0.74 * scale, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshLambertMaterial({ color: 0x95a5a6 }));
-        helm.position.set(0, 2.7 * scale, 0);
-        group.add(helm);
-        const plume = new THREE.Mesh(new THREE.ConeGeometry(0.18 * scale, 0.45 * scale, 6), new THREE.MeshLambertMaterial({ color: 0xe74c3c }));
-        plume.position.set(0, 3.65 * scale, 0);
-        group.add(plume);
-      }
-
-      // 4. Arms / Sleeves (Swinging during walk)
-      const armGeo = new THREE.CylinderGeometry(0.14 * scale, 0.2 * scale, 1.1 * scale, 8);
-      const armMat = new THREE.MeshLambertMaterial({ color: config.robeColor });
-
-      const leftArm = new THREE.Mesh(armGeo, armMat);
-      leftArm.position.set(-0.68 * scale, 1.5 * scale, 0);
-      group.add(leftArm);
-
-      const rightArm = new THREE.Mesh(armGeo, armMat);
-      rightArm.position.set(0.68 * scale, 1.5 * scale, 0);
-      group.add(rightArm);
-
-      // 5. Feet / Shoes
-      const shoeMat = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
-      const shoeL = new THREE.Mesh(new THREE.BoxGeometry(0.24 * scale, 0.16 * scale, 0.4 * scale), shoeMat);
-      shoeL.position.set(-0.25 * scale, 0.08 * scale, 0);
-      group.add(shoeL);
-      const shoeR = new THREE.Mesh(new THREE.BoxGeometry(0.24 * scale, 0.16 * scale, 0.4 * scale), shoeMat);
-      shoeR.position.set(0.25 * scale, 0.08 * scale, 0);
-      group.add(shoeR);
-
-      // 6. Accessories
-      if (config.accessory === 'gourd') {
-        const gourd = new THREE.Mesh(new THREE.SphereGeometry(0.24 * scale, 8, 8), new THREE.MeshLambertMaterial({ color: 0xe67e22 }));
-        gourd.position.set(0.72 * scale, 1.05 * scale, 0.25 * scale);
-        group.add(gourd);
-      } else if (config.accessory === 'brush') {
-        const brush = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * scale, 0.04 * scale, 1.1 * scale, 6), new THREE.MeshLambertMaterial({ color: 0x795548 }));
-        brush.position.set(0.72 * scale, 1.25 * scale, 0.25 * scale);
-        brush.rotation.x = Math.PI / 4;
-        group.add(brush);
-      } else if (config.accessory === 'book') {
-        const book = new THREE.Mesh(new THREE.BoxGeometry(0.35 * scale, 0.45 * scale, 0.12 * scale), new THREE.MeshLambertMaterial({ color: 0x3498db }));
-        book.position.set(-0.72 * scale, 1.25 * scale, 0.25 * scale);
-        group.add(book);
-      }
+      // Illustrated Chibi Ancient Poet Sprite (matching user's attached art style!)
+      const tex = createChibiPoetTexture(config);
+      const spriteMat = new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        alphaTest: 0.05
+      });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(size, size, 1);
+      sprite.position.y = size * 0.48;
+      group.add(sprite);
 
       // Initial placement
       const firstWp = config.waypoints[0];
       group.position.set(firstWp.x, 0.1, firstWp.z);
       scene.add(group);
 
+      // Interactive Floating Name Tag & Speech Bubble
+      const labelWrap = document.createElement('div');
+      labelWrap.className = 'npc-label-wrap';
+      labelWrap.innerHTML = `
+        <div class="npc-quote-bubble">${config.title}：${config.quote}</div>
+        <div class="npc-name-pill">${config.name}</div>
+      `;
+      const bubbleEl = labelWrap.querySelector('.npc-quote-bubble');
+      let bubbleTimer = null;
+      labelWrap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('fly');
+        // Hide other bubbles
+        document.querySelectorAll('.npc-quote-bubble.show').forEach(b => {
+          if (b !== bubbleEl) b.classList.remove('show');
+        });
+        bubbleEl.classList.toggle('show');
+        if (bubbleTimer) clearTimeout(bubbleTimer);
+        if (bubbleEl.classList.contains('show')) {
+          bubbleTimer = setTimeout(() => bubbleEl.classList.remove('show'), 4500);
+        }
+      });
+      if (npcLabelsContainer) npcLabelsContainer.appendChild(labelWrap);
+
       return {
         name: config.name,
         title: config.title,
         quote: config.quote,
         group: group,
-        leftArm: leftArm,
-        rightArm: rightArm,
-        shoeL: shoeL,
-        shoeR: shoeR,
+        sprite: sprite,
+        shadow: shadow,
+        labelWrap: labelWrap,
+        baseSize: size,
+        facingDir: 1,
         waypoints: config.waypoints,
         currentWp: 0,
         speed: config.speed || 0.12,
         walkPhase: Math.random() * Math.PI * 2,
         baseY: 0.1,
-        color: config.robeColor
+        color: config.trimHex || '#7aa99c'
       };
     }
 
-    // Spawn 7 Ancient Walkers along garden paths
-    // 1. 李太白 (Walking along waterfront & bridge)
+    // Spawn 8 Illustrated Chibi Ancient Walkers strolling around the Tang Garden!
+    // 1. 李太白 (忠實還原附圖造型：米白袍 + 青瓷綠交領飄帶 + 微笑山羊鬍 + 飄葉，漫步在基礎亭與曲橋間)
     ancientNPCs.push(createAncientFigure({
       name: "李太白",
       title: "詩仙・李白",
       quote: "「朝辭白帝彩雲間，千里江陵一日還！」",
-      robeColor: 0xf8f9fa,
-      beltColor: 0x2980b9,
+      robeHex: "#f6f4ee",
+      shadeHex: "#dfe5dc",
+      trimHex: "#7aa99c",
+      hairHex: "#4a2511",
       hat: "bun",
-      accessory: "gourd",
+      hasBeard: true,
+      size: 7.8,
       speed: 0.11,
       waypoints: [
-        { x: -32, z: -35 },
-        { x: -20, z: -15 },
-        { x: -14, z: 5 },
-        { x: -26, z: 18 },
-        { x: -38, z: 8 },
-        { x: -32, z: -18 }
+        { x: -42, z: 34 },
+        { x: -32, z: 18 },
+        { x: -16, z: 8 },
+        { x: -24, z: -16 },
+        { x: -36, z: -28 },
+        { x: -46, z: 10 }
       ]
     }));
 
-    // 2. 王摩詰 (Strolling near Bamboo grove & 基礎亭)
+    // 2. 王摩詰 (竹青色飄逸長袍 + 髮髻飄帶，漫步在基礎亭竹林荷塘旁)
     ancientNPCs.push(createAncientFigure({
       name: "王摩詰",
       title: "詩佛・王維",
-      quote: "「行到水窮處，坐看雲起時。」",
-      robeColor: 0x52b788,
-      beltColor: 0x1b4d3e,
+      quote: "「獨坐幽篁裡，彈琴復長嘯。」",
+      robeHex: "#f3f7f2",
+      shadeHex: "#d6e4d8",
+      trimHex: "#4a8f79",
+      hairHex: "#4a2511",
       hat: "bun",
-      accessory: "brush",
-      speed: 0.09,
+      hasBeard: true,
+      size: 7.5,
+      speed: 0.095,
       waypoints: [
-        { x: -48, z: 38 },
-        { x: -58, z: 28 },
-        { x: -66, z: 40 },
-        { x: -55, z: 52 },
-        { x: -45, z: 48 }
+        { x: -46, z: 42 },
+        { x: -58, z: 32 },
+        { x: -64, z: 46 },
+        { x: -54, z: 56 },
+        { x: -42, z: 52 }
       ]
     }));
 
-    // 3. 杜少陵 (Walking near Maple path & 潛力閣)
+    // 3. 杜少陵 (暖杏書生袍 + 靛青滾邊飄帶，漫步於潛力閣紅楓小徑)
     ancientNPCs.push(createAncientFigure({
       name: "杜少陵",
       title: "詩聖・杜甫",
       quote: "「隨風潛入夜，潤物細無聲。」",
-      robeColor: 0x8d6e63,
-      beltColor: 0x4e342e,
-      hat: "scholar",
-      accessory: "book",
-      speed: 0.085,
+      robeHex: "#f7f1e6",
+      shadeHex: "#e3d6c3",
+      trimHex: "#5d738d",
+      hairHex: "#432818",
+      hat: "bun",
+      hasBeard: true,
+      size: 7.5,
+      speed: 0.09,
       waypoints: [
         { x: 18, z: -46 },
         { x: 32, z: -36 },
-        { x: 50, z: -22 },
-        { x: 35, z: -18 },
+        { x: 48, z: -22 },
+        { x: 34, z: -18 },
         { x: 20, z: -32 }
       ]
     }));
 
-    // 4. 陶五柳 (Strolling peacefully near 衝刺軒 pines)
+    // 4. 陶淵明 (素雅月白田園袍 + 斗笠草帽，悠然漫步於衝刺軒青松間)
     ancientNPCs.push(createAncientFigure({
       name: "陶淵明",
       title: "五柳先生・陶淵明",
       quote: "「採菊東籬下，悠然見南山。」",
-      robeColor: 0x78909c,
-      beltColor: 0x37474f,
+      robeHex: "#f4f6f4",
+      shadeHex: "#dce2de",
+      trimHex: "#6d8c78",
+      hairHex: "#4a2511",
       hat: "straw",
-      speed: 0.08,
+      hasBeard: true,
+      size: 7.6,
+      speed: 0.085,
       waypoints: [
-        { x: 58, z: -16 },
-        { x: 70, z: -6 },
-        { x: 62, z: 8 },
-        { x: 50, z: 0 }
+        { x: 56, z: -14 },
+        { x: 68, z: -4 },
+        { x: 60, z: 10 },
+        { x: 48, z: 2 }
       ]
     }));
 
-    // 5. 蘇東坡 (Strolling near 展翅殿 Imperial Palace)
+    // 5. 蘇東坡 (藕荷紫滾邊長袍 + 東坡巾，漫步於展翅殿金陵宮苑前)
     ancientNPCs.push(createAncientFigure({
       name: "蘇東坡",
       title: "東坡居士・蘇軾",
       quote: "「人有悲歡離合，月有陰晴圓缺。」",
-      robeColor: 0x8e44ad,
-      beltColor: 0xf1c40f,
+      robeHex: "#f6f2f9",
+      shadeHex: "#e3d8eb",
+      trimHex: "#8e6aa8",
+      hairHex: "#4a2511",
       hat: "dongpo",
+      hasBeard: true,
+      size: 7.7,
       speed: 0.10,
       waypoints: [
-        { x: 38, z: 42 },
-        { x: 48, z: 56 },
-        { x: 34, z: 62 },
-        { x: 24, z: 46 }
+        { x: 36, z: 42 },
+        { x: 48, z: 54 },
+        { x: 32, z: 60 },
+        { x: 22, z: 46 }
       ]
     }));
 
-    // 6. 辛幼安 (Pacing with cape near 昇華樓 Pagoda)
+    // 6. 辛幼安 (青灰勁裝 + 金冠朱紅飄帶，豪邁巡行昇華樓高閣)
     ancientNPCs.push(createAncientFigure({
       name: "辛幼安",
       title: "稼軒居士・辛棄疾",
       quote: "「驀然回首，那人卻在，燈火闌珊處！」",
-      robeColor: 0x34495e,
-      beltColor: 0xe74c3c,
-      hat: "helmet",
-      speed: 0.11,
+      robeHex: "#f3f4f7",
+      shadeHex: "#d8dce6",
+      trimHex: "#c05246",
+      hairHex: "#3b1d0c",
+      hat: "crown",
+      hasBeard: true,
+      size: 7.6,
+      speed: 0.115,
       waypoints: [
         { x: 0, z: 18 },
         { x: 14, z: 4 },
@@ -3509,23 +3677,47 @@
       ]
     }));
 
-    // 7. 小書童・墨兒 (Cheerfully running across garden paths)
+    // 7. 小書童・墨兒 (雙丫髻 + 青瓷綠可愛漢服，無鬍鬚，開開心心在庭園小跑)
     ancientNPCs.push(createAncientFigure({
       name: "小墨兒",
       title: "長安小書童",
       quote: "「熟讀唐詩三百首，不會作詩也會吟！」",
-      robeColor: 0x48a999,
-      beltColor: 0xd93829,
+      robeHex: "#fdfbf4",
+      shadeHex: "#ece5d3",
+      trimHex: "#5aa897",
+      hairHex: "#4a2511",
       hat: "double-bun",
-      accessory: "brush",
-      scale: 0.85,
-      speed: 0.14,
+      hasBeard: false,
+      size: 6.4,
+      speed: 0.135,
       waypoints: [
-        { x: -20, z: -5 },
-        { x: 0, z: 0 },
+        { x: -20, z: -4 },
+        { x: 0, z: 2 },
         { x: 18, z: 12 },
-        { x: 5, z: 25 },
-        { x: -10, z: 10 }
+        { x: 6, z: 24 },
+        { x: -10, z: 12 }
+      ]
+    }));
+
+    // 8. 小詩童・清兒 (雙丫髻 + 暖桃粉滾邊小袍，在基礎亭與啟航臺之間活潑散步)
+    ancientNPCs.push(createAncientFigure({
+      name: "小清兒",
+      title: "長安小詩童",
+      quote: "「春眠不覺曉，處處聞啼鳥！」",
+      robeHex: "#fffaf7",
+      shadeHex: "#f2e2dc",
+      trimHex: "#e07a7a",
+      hairHex: "#4a2511",
+      hat: "double-bun",
+      hasBeard: false,
+      size: 6.4,
+      speed: 0.125,
+      waypoints: [
+        { x: -48, z: 54 },
+        { x: -34, z: 44 },
+        { x: -24, z: 26 },
+        { x: -38, z: 28 },
+        { x: -54, z: 40 }
       ]
     }));
 
@@ -4135,7 +4327,12 @@
         }
       });
 
-      // Update Ancient Figures Movement & Walking Animation
+      // Update Ancient Figures Movement & Chibi 2.5D Walking Animation
+      const _camRight = new THREE.Vector3();
+      const _moveVec = new THREE.Vector3();
+      const _npcProj = new THREE.Vector3();
+      camera.matrixWorld.extractBasis(_camRight, new THREE.Vector3(), new THREE.Vector3());
+
       ancientNPCs.forEach(npc => {
         const target = npc.waypoints[npc.currentWp];
         const dx = target.x - npc.group.position.x;
@@ -4145,21 +4342,49 @@
         if (dist < 1.2) {
           npc.currentWp = (npc.currentWp + 1) % npc.waypoints.length;
         } else {
-          // Smooth rotation to face waypoint
           const targetAngle = Math.atan2(dx, dz);
-          npc.group.rotation.y = targetAngle;
+          const vx = Math.sin(targetAngle) * npc.speed;
+          const vz = Math.cos(targetAngle) * npc.speed;
 
           // Move forward along path
-          npc.group.position.x += Math.sin(targetAngle) * npc.speed;
-          npc.group.position.z += Math.cos(targetAngle) * npc.speed;
+          npc.group.position.x += vx;
+          npc.group.position.z += vz;
 
-          // Bobbing walk cycle & swinging sleeves
-          npc.walkPhase += npc.speed * 9;
-          npc.group.position.y = npc.baseY + Math.abs(Math.sin(npc.walkPhase)) * 0.28;
-          if (npc.leftArm) npc.leftArm.rotation.x = Math.sin(npc.walkPhase) * 0.55;
-          if (npc.rightArm) npc.rightArm.rotation.x = -Math.sin(npc.walkPhase) * 0.55;
-          if (npc.shoeL) npc.shoeL.position.z = Math.sin(npc.walkPhase) * 0.2;
-          if (npc.shoeR) npc.shoeR.position.z = -Math.sin(npc.walkPhase) * 0.2;
+          // Auto-flip chibi sprite horizontally so they always face walking direction!
+          // (Base SVG illustration faces LEFT; flip X negative when moving RIGHT relative to camera)
+          _moveVec.set(vx, 0, vz).normalize();
+          const rightDot = _camRight.dot(_moveVec);
+          if (Math.abs(rightDot) > 0.12) {
+            npc.facingDir = rightDot > 0 ? -1 : 1;
+          }
+          npc.sprite.scale.x = npc.baseSize * npc.facingDir;
+
+          // Cheerful chibi bounce & gentle sway while walking
+          npc.walkPhase += npc.speed * 11;
+          const hop = Math.abs(Math.sin(npc.walkPhase));
+          npc.sprite.position.y = npc.baseSize * 0.48 + hop * 0.55;
+          npc.sprite.material.rotation = Math.sin(npc.walkPhase) * 0.08;
+          if (npc.shadow) {
+            const sScale = 1 - hop * 0.18;
+            npc.shadow.scale.set(sScale, sScale, 1);
+          }
+        }
+
+        // Project floating name tag / speech bubble above chibi poet
+        if (npc.labelWrap) {
+          _npcProj.set(npc.group.position.x, npc.group.position.y + npc.baseSize * 0.96, npc.group.position.z);
+          _npcProj.project(camera);
+          const camDist = camera.position.distanceTo(npc.group.position);
+          if (_npcProj.z < 1 && camDist < 120) {
+            const sx = (_npcProj.x * 0.5 + 0.5) * window.innerWidth;
+            const sy = (-_npcProj.y * 0.5 + 0.5) * window.innerHeight;
+            npc.labelWrap.style.left = sx + 'px';
+            npc.labelWrap.style.top = sy + 'px';
+            npc.labelWrap.style.display = 'flex';
+            npc.labelWrap.style.opacity = camDist > 95 ? '0.55' : '1';
+          } else {
+            npc.labelWrap.style.display = 'none';
+          }
         }
       });
 
