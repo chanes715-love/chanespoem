@@ -4327,10 +4327,11 @@
         }
       });
 
-      // Update Ancient Figures Movement & Chibi 2.5D Walking Animation
+      // Update Ancient Figures Movement (Smooth, Steady Gliding Walk - No Jitter)
       const _camRight = new THREE.Vector3();
       const _moveVec = new THREE.Vector3();
       const _npcProj = new THREE.Vector3();
+      const dtFactor = Math.min(delta, 0.05) * 60;
       camera.matrixWorld.extractBasis(_camRight, new THREE.Vector3(), new THREE.Vector3());
 
       ancientNPCs.forEach(npc => {
@@ -4343,31 +4344,27 @@
           npc.currentWp = (npc.currentWp + 1) % npc.waypoints.length;
         } else {
           const targetAngle = Math.atan2(dx, dz);
-          const vx = Math.sin(targetAngle) * npc.speed;
-          const vz = Math.cos(targetAngle) * npc.speed;
+          const step = npc.speed * dtFactor;
+          const vx = Math.sin(targetAngle) * step;
+          const vz = Math.cos(targetAngle) * step;
 
-          // Move forward along path
+          // Smooth steady movement along path
           npc.group.position.x += vx;
           npc.group.position.z += vz;
 
-          // Auto-flip chibi sprite horizontally so they always face walking direction!
-          // (Base SVG illustration faces LEFT; flip X negative when moving RIGHT relative to camera)
+          // Stable horizontal facing flip with hysteresis (prevents flipping flicker)
           _moveVec.set(vx, 0, vz).normalize();
           const rightDot = _camRight.dot(_moveVec);
-          if (Math.abs(rightDot) > 0.12) {
-            npc.facingDir = rightDot > 0 ? -1 : 1;
+          if (rightDot > 0.28) {
+            npc.facingDir = -1;
+          } else if (rightDot < -0.28) {
+            npc.facingDir = 1;
           }
           npc.sprite.scale.x = npc.baseSize * npc.facingDir;
 
-          // Cheerful chibi bounce & gentle sway while walking
-          npc.walkPhase += npc.speed * 11;
-          const hop = Math.abs(Math.sin(npc.walkPhase));
-          npc.sprite.position.y = npc.baseSize * 0.48 + hop * 0.55;
-          npc.sprite.material.rotation = Math.sin(npc.walkPhase) * 0.08;
-          if (npc.shadow) {
-            const sScale = 1 - hop * 0.18;
-            npc.shadow.scale.set(sScale, sScale, 1);
-          }
+          // Keep upright and steady with no shaking or rapid bouncing
+          npc.sprite.position.y = npc.baseSize * 0.48;
+          npc.sprite.material.rotation = 0;
         }
 
         // Project floating name tag / speech bubble above chibi poet
@@ -4378,8 +4375,8 @@
           if (_npcProj.z < 1 && camDist < 120) {
             const sx = (_npcProj.x * 0.5 + 0.5) * window.innerWidth;
             const sy = (-_npcProj.y * 0.5 + 0.5) * window.innerHeight;
-            npc.labelWrap.style.left = sx + 'px';
-            npc.labelWrap.style.top = sy + 'px';
+            npc.labelWrap.style.left = Math.round(sx) + 'px';
+            npc.labelWrap.style.top = Math.round(sy) + 'px';
             npc.labelWrap.style.display = 'flex';
             npc.labelWrap.style.opacity = camDist > 95 ? '0.55' : '1';
           } else {
