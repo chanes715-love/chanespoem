@@ -3966,9 +3966,23 @@
 
       const st = STATIONS[stationIdx];
       document.getElementById('quiz-header-title').innerText = `${st.grade}【${st.landmark}】詩意闖關挑戰`;
+      document.getElementById('quiz-footer').innerHTML = `
+        <button class="ctrl-btn" id="quiz-quit-btn" onclick="closeQuizModal()">返回導覽</button>
+        <button class="quiz-next-btn" id="quiz-next-btn" disabled onclick="handleQuizNext()">下一題 ▶</button>
+      `;
       document.getElementById('quiz-modal-backdrop').classList.add('open');
 
       renderQuizQuestion();
+    }
+
+    function handleQuizNext() {
+      const st = STATIONS[currentQuizStation];
+      if (currentQuizIndex < st.quizzes.length - 1) {
+        currentQuizIndex++;
+        renderQuizQuestion();
+      } else {
+        renderQuizResults();
+      }
     }
 
     function closeQuizModal() {
