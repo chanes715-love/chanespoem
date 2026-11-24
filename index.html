@@ -1137,6 +1137,69 @@
       letter-spacing: 0.8px;
     }
 
+    /* Visitor Counter Card (under main-title-card) */
+    .visit-counter-card {
+      position: absolute;
+      top: 64px;
+      left: 16px;
+      z-index: 20;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 16px 6px 10px;
+      background: rgba(253, 251, 247, 0.92);
+      border: 1.5px solid rgba(178, 136, 80, 0.72);
+      border-radius: 12px;
+      box-shadow: 0 5px 16px rgba(0, 0, 0, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: auto;
+      font-family: var(--font-iansui);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .visit-counter-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 7px 20px rgba(0, 0, 0, 0.22);
+    }
+
+    .visit-counter-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1F4E79, #0d1b2a);
+      color: #f1c40f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+
+    .visit-counter-label {
+      font-size: 13px;
+      color: var(--secondary);
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .visit-counter-value {
+      font-size: 17px;
+      font-weight: bold;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+      min-width: 24px;
+      text-align: right;
+    }
+
+    .visit-counter-unit {
+      font-size: 12px;
+      color: var(--secondary);
+      margin-left: -4px;
+    }
+
     .top-actions {
       display: flex;
       align-items: center;
@@ -1360,7 +1423,7 @@
     /* Side Station Drawer */
     .station-drawer {
       position: absolute;
-      top: 56px;
+      top: 112px;
       left: 16px;
       bottom: 0px;
       width: min(94vw, 580px);
@@ -1842,7 +1905,10 @@
 
     @media (max-width: 768px) {
       .top-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .station-drawer { width: calc(100% - 40px); }
+      .visit-counter-card { top: 112px; left: 16px; padding: 5px 12px 5px 8px; gap: 8px; }
+      .visit-counter-label { font-size: 12px; }
+      .visit-counter-value { font-size: 15px; }
+      .station-drawer { top: 156px; width: calc(100% - 40px); }
       .timeline-container { padding: 10px 14px; }
       .node-circle { width: 28px; height: 28px; font-size: 12px; }
       .node-label { font-size: 11px; }
@@ -2391,6 +2457,14 @@
           <span>📜</span> 全書詩藏 (123首)
         </button>
       </div>
+    </div>
+
+    <!-- Visitor Counter -->
+    <div class="visit-counter-card" id="visit-counter-card" title="長安小詩人・累計瀏覽人次">
+      <div class="visit-counter-icon" aria-hidden="true">👁️</div>
+      <span class="visit-counter-label">累計瀏覽人次</span>
+      <span class="visit-counter-value" id="visit-count-num">—</span>
+      <span class="visit-counter-unit">人次</span>
     </div>
 
     <!-- Minimap Radar -->
@@ -4805,5 +4879,45 @@
     </div>
   </div>
 
+  <script>
+    // =========================================================================
+    // VISITOR COUNTER (Cloudflare D1 Global Persistence, starts from 1)
+    // =========================================================================
+    (function initVisitCounter() {
+      const COUNTER_API = 'https://changan-poem.wenchun0910.workers.dev/api/visit';
+      const LOCAL_KEY = 'changan_poem_visit_count';
+      const el = document.getElementById('visit-count-num');
+      if (!el) return;
+
+      function renderCount(n) {
+        const safeNum = Math.max(1, Number(n) || 1);
+        el.textContent = safeNum.toLocaleString('zh-TW');
+      }
+
+      fetch(COUNTER_API, { method: 'POST', mode: 'cors', cache: 'no-store' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && typeof data.count === 'number') {
+            try { localStorage.setItem(LOCAL_KEY, String(data.count)); } catch (_) {}
+            renderCount(data.count);
+          } else {
+            throw new Error('Invalid response');
+          }
+        })
+        .catch(function() {
+          // Offline fallback using localStorage starting from 1
+          let localCount = 1;
+          try {
+            const prev = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
+            localCount = (Number.isFinite(prev) && prev >= 0 ? prev : 0) + 1;
+            localStorage.setItem(LOCAL_KEY, String(localCount));
+          } catch (_) {}
+          renderCount(localCount);
+        });
+    })();
+  </script>
 </body>
 </html>
